@@ -174,7 +174,7 @@ server {
 {{ $is_regexp := hasPrefix "~" $host }}
 {{ $upstream_name := when $is_regexp (sha1 $host) $host }}
 
-# {{ $host }}
+# {{ $host }} Test
 upstream {{ $upstream_name }} {
 
 {{ range $container := $containers }}
