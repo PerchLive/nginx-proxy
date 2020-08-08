@@ -6,20 +6,22 @@
 {{ define "upstream" }}
 	{{ if .Address }}
 		{{/* If we got the containers from swarm and this container's port is published to host, use host IP:PORT */}}
+
 		{{ if and .Container.Node.ID .Address.HostPort }}
-			# {{ .Container.Node.Name }}/{{ .Container.Name }} <- Container Name
-			{{/* Hack to detect upstream postgres and not count suspected failures, see https://github.com/benoitc/gunicorn/issues/2347#issuecomment-670797131 */}}
-			{{ if eq .Address.HostPort "5432"}}
-				# psql port found
-				server {{ .Container.Node.Address.IP }}:{{ .Address.HostPort }} max_fails=1 fail_timeout=100000000000s;
-			{{ else }}
-				# psql port not found
-				server {{ .Container.Node.Address.IP }}:{{ .Address.HostPort }};
-			{{ end }}
+			# Containers from swarm, container's port is published to host
+			# {{ .Container.Node.Name }}/{{ .Container.Name }}\
+			server {{ .Container.Node.Address.IP }}:{{ .Address.HostPort }};
 		{{/* If there is no swarm node or the port is not published on host, use container's IP:PORT */}}
 		{{ else if .Network }}
+			# No swarm node or the port is not published on host
 			# {{ .Container.Name }}
-			server {{ .Network.IP }}:{{ .Address.Port }};
+			{{/* Hack to detect upstream postgres and not count suspected failures, see https://github.com/benoitc/gunicorn/issues/2347#issuecomment-670797131 */}}
+			{{ if eq .Address.Port "5432"}}
+				# psql port found, adding arguments statically from template:
+				server {{ .Network.IP }}:{{ .Address.Port }} max_fails=1 fail_timeout=100000000000s;
+			{{ else }}
+				server {{ .Network.IP }}:{{ .Address.Port }};
+			{{ end }}
 		{{ end }}
 	{{ else if .Network }}
 		# {{ .Container.Name }}
